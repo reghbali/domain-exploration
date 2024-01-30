@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "domain"
+version = "0.0.1"
+dependencies = [
+    "torch",
+    "torchmetrics",
+    "torchvision",
+    "lightning[pytorch-extra]"
+]
+
+[tool.setuptools]
+py-modules = ["domain"]
