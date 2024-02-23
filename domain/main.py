@@ -1,8 +1,8 @@
 # main.py
 from lightning.pytorch.cli import LightningCLI
 
-import domain.data.modules
-import domain.model.modules
+import domain.data.data_modules
+import domain.model.lit_modules
 
 
 def cli_main():
