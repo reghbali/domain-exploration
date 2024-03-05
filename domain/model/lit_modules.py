@@ -85,3 +85,8 @@ class MLP_MNIST(LitClassificationModel):
 
     def __init__(self):
         super().__init__(net=MLP([28, 28], [10]), num_classes=10)
+    
+
+class MLP_CiFAR10(LitClassificationModel):
+    def __init__(self):
+        super().__init__(net=MLP([32, 32, 3], [10]), num_classes=10)
