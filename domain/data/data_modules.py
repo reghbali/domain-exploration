@@ -18,7 +18,7 @@ class BaseDataModule(L.LightningDataModule):
         self.domain = domain
         self.batch_size = batch_size
 
-        if self.domain == "freq":
+        if self.domain == 'freq':
             self.domain_transform = transforms.Compose(
                 [SimpleFreqSpace(), SimpleComplex2Vec()]
             )
@@ -53,8 +53,8 @@ class ImageNetDataModule(BaseDataModule):
         normalize = transforms.Normalize(
             mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
         )
-        traindir = os.path.join(self.data_dir, "train")
-        valdir = os.path.join(self.data_dir, "val")
+        traindir = os.path.join(self.data_dir, 'train')
+        valdir = os.path.join(self.data_dir, 'val')
 
         self.train_set = ImageFolder(
             traindir,
@@ -89,21 +89,21 @@ class MNISTDataModule(BaseDataModule):
 
     def prepare_data(self):
         # download
-        datasets.MNIST(root="MNIST", download=True, train=True)
-        datasets.MNIST(root="MNIST", download=True, train=False)
+        datasets.MNIST(root='MNIST', download=True, train=True)
+        datasets.MNIST(root='MNIST', download=True, train=False)
 
     def setup(self, stage: str):
         tensor_transform = transforms.ToTensor()
 
         self.test_set = datasets.MNIST(
-            root="MNIST",
+            root='MNIST',
             download=True,
             train=False,
             transform=transforms.Compose([tensor_transform, self.domain_transform]),
         )
 
         data_set = datasets.MNIST(
-            root="MNIST",
+            root='MNIST',
             download=True,
             train=True,
             transform=transforms.Compose([tensor_transform, self.domain_transform]),
@@ -124,8 +124,8 @@ class CIFAR10DataModule(BaseDataModule):
 
     def prepare_data(self):
         # download
-        datasets.CIFAR10(root="CIFAR10", download=True, train=True)
-        datasets.CIFAR10(root="CIFAR10", download=True, train=False)
+        datasets.CIFAR10(root='CIFAR10', download=True, train=True)
+        datasets.CIFAR10(root='CIFAR10', download=True, train=False)
 
     def setup(self, stage: str):
         cifar10_transform = transforms.Compose(
@@ -136,14 +136,14 @@ class CIFAR10DataModule(BaseDataModule):
         )
 
         self.test_set = datasets.CIFAR10(
-            root="CIFAR10",
+            root='CIFAR10',
             download=True,
             train=False,
             transform=transforms.Compose([cifar10_transform, self.domain_transform]),
         )
 
         data_set = datasets.CIFAR10(
-            root="CIFAR10",
+            root='CIFAR10',
             download=True,
             train=True,
             transform=transforms.Compose([cifar10_transform, self.domain_transform]),

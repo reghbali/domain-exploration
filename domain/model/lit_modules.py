@@ -62,7 +62,7 @@ class LitClassificationModel(L.LightningModule):
         # Calculate loss
         loss = self.criterion(y_hat, y)
 
-        self.log("train_loss", loss, prog_bar=True)
+        self.log('train_loss', loss, prog_bar=True)
         return loss
 
     def test_step(self, batch, batch_idx):
@@ -70,8 +70,8 @@ class LitClassificationModel(L.LightningModule):
         y_hat, y = self.infer_batch(batch)
         loss = self.criterion(y_hat, y)
         acc = multiclass_accuracy(y_hat, y, num_classes=self.num_classes)
-        self.log("test_loss", loss, prog_bar=True)
-        self.log("acc", acc, prog_bar=True)
+        self.log('test_loss', loss, prog_bar=True)
+        self.log('acc', acc, prog_bar=True)
 
 
 class MLP_MNIST(LitClassificationModel):
