@@ -1,4 +1,4 @@
-from typing import Tuple, Dict, List, Any
+from typing import Tuple, Dict
 
 import lightning as L
 import torch
@@ -9,12 +9,7 @@ from domain.model.modules import MLP
 
 
 class LitClassificationModel(L.LightningModule):
-
-    def __init__(
-            self,
-            net: str,
-            num_classes: int
-    ) -> None:
+    def __init__(self, net: str, num_classes: int) -> None:
         """Initialization of the custom Lightning Module.
 
         Args:
@@ -27,7 +22,7 @@ class LitClassificationModel(L.LightningModule):
         self.criterion = torch.nn.CrossEntropyLoss()
 
     def configure_optimizers(
-            self,
+        self,
     ) -> Tuple[Optimizer, lr_scheduler.LRScheduler]:
         """Configures the optimizer and scheduler based on the learning rate
             and step size.
@@ -39,9 +34,7 @@ class LitClassificationModel(L.LightningModule):
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=300)
         return [optimizer], [scheduler]
 
-    def infer_batch(
-            self, batch: Dict[str, dict]
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    def infer_batch(self, batch: Dict[str, dict]) -> Tuple[torch.Tensor, torch.Tensor]:
         """Propagate given batch through the Lightning Module.
 
         Args:
@@ -82,11 +75,10 @@ class LitClassificationModel(L.LightningModule):
 
 
 class MLP_MNIST(LitClassificationModel):
-
     def __init__(self):
         super().__init__(net=MLP([28, 28], [10]), num_classes=10)
-    
 
-class MLP_CiFAR10(LitClassificationModel):
+
+class MLP_CIFAR10(LitClassificationModel):
     def __init__(self):
         super().__init__(net=MLP([32, 32, 3], [10]), num_classes=10)
