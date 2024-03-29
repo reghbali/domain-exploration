@@ -87,11 +87,11 @@ class MLP(nn.Module):
 
 class PatchEmbedding(nn.Module):
     def __init__(
-        self,
-        image_size: Tuple[int, int],
-        patch_size: int,
-        in_channels: int,
-        embed_dim: int,
+            self,
+            image_size: Tuple[int, int],
+            patch_size: int,
+            in_channels: int,
+            embed_dim: int,
     ) -> None:
         """Patch Embedding Layer
 
@@ -125,7 +125,13 @@ class PatchEmbedding(nn.Module):
 
 
 class TransformerEncoder(nn.Module):
-    def __init__(self, embed_dim, num_heads, num_layers, dropout_rate) -> None:
+    def __init__(
+            self, 
+            embed_dim: int, 
+            num_heads: int, 
+            num_layers: int, 
+            dropout_rate
+    ) -> None:
         """Encoder Layer
 
         Args:
@@ -137,9 +143,7 @@ class TransformerEncoder(nn.Module):
 
         super().__init__()
 
-        encoder_layer = nn.TransformerEncoderLayer(
-            d_model=embed_dim, nhead=num_heads, dropout=dropout_rate
-        )
+        encoder_layer = nn.TransformerEncoderLayer(d_model=embed_dim, nhead=num_heads, dropout=dropout_rate)
 
         self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
 
@@ -150,13 +154,13 @@ class TransformerEncoder(nn.Module):
 class VisionTransformer(nn.Module):
     def __init__(
         self,
-        image_size,
-        patch_size,
-        in_channels,
-        embed_dim,
-        num_heads,
-        num_layers,
-        num_classes,
+        image_size: int,
+        patch_size: int,
+        in_channels: int,
+        embed_dim: int,
+        num_heads: int,
+        num_layers: int,
+        num_classes: int,
         dropout_rate=0.15,
     ) -> None:
         """Vision Transformer Initialization
@@ -166,12 +170,10 @@ class VisionTransformer(nn.Module):
         """
         super().__init__()
 
-        self.patch_embedding = PatchEmbedding(
-            image_size, patch_size, in_channels, embed_dim
-        )
-        self.transformer_encoder = TransformerEncoder(
-            embed_dim, num_heads, num_layers, dropout_rate
-        )
+        self.patch_embedding = PatchEmbedding(image_size, patch_size, in_channels, embed_dim)
+
+        self.transformer_encoder = TransformerEncoder(embed_dim, num_heads, num_layers, dropout_rate)
+
         self.classifier = nn.Linear(embed_dim, num_classes)
 
     def forward(self, x):
@@ -204,7 +206,7 @@ class CNN(nn.Module):
             linear_size2: int,
             linear_size3: int,
             activation = nn.functional.gelu
-        ) -> None:
+    ) -> None:
         """Initialization of the Convolutional Neural Network.
 
         Args:
@@ -218,7 +220,7 @@ class CNN(nn.Module):
             linear_size1: 
             linear_size2:
             linear_size3:  
-            activation: default geLu, other torch.functional activations accepted
+            activation: default geLu, other (nn.Module) activations accepted
         """
         super().__init__()
         self.image_size
@@ -240,7 +242,7 @@ class CNN(nn.Module):
                 nn.Linear(output_shape, linear_size1),
                 activation(),
                 nn.Linear(linear_size1, linear_size2),
-                activation(),
+                activation(), 
                 nn.Linear(linear_size2, linear_size3),
                 activation(),
                 nn.Linear(linear_size3, num_classes)  
@@ -262,7 +264,7 @@ class ResCNN_block(nn.Module):
             stride = 1, 
             activation= nn.ReLU(),
             normalization = nn.InstanceNorm2d
-        ) -> None:
+    ) -> None:
         """Initialization of the Convolutional Block used for residuality
 
         Args:
@@ -316,7 +318,7 @@ class ResCNN(nn.Module):
             in_channels: int = 3,
             num_classes: int = 1000,                
             activation = nn.ReLU()
-        ) -> None: 
+    ) -> None: 
         """Initialization of the Residual CNN
 
         Args:
@@ -389,10 +391,10 @@ class ResCNN(nn.Module):
 class MLP_Block_Residual(nn.Module):
     def __init__(
             self, 
-            input_size, 
-            output_size, 
+            input_size: int, 
+            output_size: int, 
             activation= nn.ReLU()
-        ) -> None:
+    ) -> None:
         """Initialization of the Residual MLP Block
 
         Args:
@@ -431,7 +433,7 @@ class ResidualMLP(nn.Module):
             layers: tuple[int], 
             num_classes: int, 
             activation=nn.GELU()
-        ) -> None:
+    ) -> None:
         """Initialization of the Residual multi-layer perceptron.
 
         Args:
@@ -458,6 +460,5 @@ class ResidualMLP(nn.Module):
         self.layers = nn.Sequential(*self.layers)
 
     def forward(self, x):
-
         return self.layers(x)
     
