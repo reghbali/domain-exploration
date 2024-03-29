@@ -175,7 +175,7 @@ class VisionTransformer(nn.Module):
         self.classifier = nn.Linear(embed_dim, num_classes)
 
     def forward(self, x):
-        """Propagates the input through the MLP block.
+        """Propagates the input through the Transformer
 
         Args:
             x: Input
@@ -193,7 +193,7 @@ class VisionTransformer(nn.Module):
 class CNN(nn.Module):
     def __init__(
             self, 
-            input_shape: Tuple[int,int],
+            input_shape: tuple[int,int],
             num_classes: int, 
             in_channels: int,
             conv1_feature_maps: int, 
@@ -260,7 +260,8 @@ class ResCNN_block(nn.Module):
             intermediate_channels, 
             identity_downsample = None, 
             stride = 1, 
-            activation= nn.ReLU()
+            activation= nn.ReLU(),
+            normalization = nn.InstanceNorm2d
         ) -> None:
         """Initialization of the Convolutional Block used for residuality
 
@@ -273,18 +274,18 @@ class ResCNN_block(nn.Module):
         """
         super().__init__()
         self.expansion = 4
-
-        self.conv_1 = nn.Conv2d(in_channels,intermediate_channels,kernel_size=1,stride=1,padding=0,bias=False,)
-        self.norm_1 = nn.BatchNorm2d(intermediate_channels)
-        self.conv_2 = nn.Conv2d(intermediate_channels,intermediate_channels,kernel_size=3,stride=stride,padding=1,bias=False,)
-        self.norm_2 = nn.BatchNorm2d(intermediate_channels)
-        self.conv_3 = nn.Conv2d(intermediate_channels,intermediate_channels * self.expansion,kernel_size=1,stride=1,padding=0,bias=False,)
-        self.norm_3 = nn.BatchNorm2d(intermediate_channels * self.expansion)
-
         self.activation = activation
         self.identity_downsample = identity_downsample
         self.stride = stride
     
+        self.conv_1 = nn.Conv2d(in_channels,intermediate_channels,kernel_size=1,stride=1,padding=0,bias=False,)
+        self.norm_1 = normalization(intermediate_channels)
+        self.conv_2 = nn.Conv2d(intermediate_channels,intermediate_channels,kernel_size=3,stride=stride,padding=1,bias=False,)
+        self.norm_2 = normalization(intermediate_channels)
+        self.conv_3 = nn.Conv2d(intermediate_channels,intermediate_channels * self.expansion,kernel_size=1,stride=1,padding=0,bias=False,)
+        self.norm_3 = normalization(intermediate_channels * self.expansion)
+
+
     def forward(self, x):
         identity = x.clone()
 
@@ -311,7 +312,7 @@ class ResCNN(nn.Module):
     def __init__(
             self, 
             ResCNN_block,
-            layers: Tuple[int, int, int, int] = (3, 4, 6, 3), 
+            layers: tuple[int, int, int, int] = (3, 4, 6, 3), 
             in_channels: int = 3,
             num_classes: int = 1000,                
             activation = nn.ReLU()
@@ -390,7 +391,7 @@ class MLP_Block_Residual(nn.Module):
             self, 
             input_size, 
             output_size, 
-            activation,
+            activation= nn.ReLU()
         ) -> None:
         """Initialization of the Residual MLP Block
 
@@ -427,11 +428,11 @@ class ResidualMLP(nn.Module):
     def __init__(
             self, 
             input_shape, 
-            layers: Tuple[int], 
+            layers: tuple[int], 
             num_classes: int, 
             activation=nn.GELU()
         ) -> None:
-        """Initialization of the Residual MLP 
+        """Initialization of the Residual multi-layer perceptron.
 
         Args:
             input_shape: Size of input image
@@ -441,20 +442,22 @@ class ResidualMLP(nn.Module):
                 
         """  
         super(ResidualMLP, self).__init__()
-        self.layers = nn.ModuleList()
         self.activation = activation
         input_size = input_shape[0] * input_shape[1] * input_shape[2]
-        
-        if len(layers) > 0: 
-            self.layers.append(nn.Linear(input_size, layers[0]))
+        self.layers = nn.ModuleList(
+            [
+                nn.Flatten(),
+                nn.Linear(input_size, layers[0]),
+            ]
+        )
         
         for i in range(1, len(layers)): 
-            self.layers.append(MLP_Block_Residual(layers[i-1], layers[i], activation=self.activation))
+            self.layers.append(MLP_Block_Residual(layers[i-1], layers[i], self.activation))
         
         self.layers.append(nn.Linear(layers[-1], num_classes))
+        self.layers = nn.Sequential(*self.layers)
 
     def forward(self, x):
-        x = x.view(x.size(0), -1) # flatten
-        for layer in self.layers:
-            x = layer(x)
-        return x
+
+        return self.layers(x)
+    
