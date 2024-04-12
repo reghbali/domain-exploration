@@ -85,111 +85,8 @@ class MLP(nn.Module):
         return self.layers(x)
 
 
-class PatchEmbedding(nn.Module):
-    def __init__(
-            self,
-            image_size: Tuple[int, int],
-            patch_size: int,
-            in_channels: int,
-            embed_dim: int,
-    ) -> None:
-        """Patch Embedding Layer
-
-        Args:
-            image_size: Shape of the input image
-            patch_size: Tunable parameter for patch size
-                        int: 64 -> [64,64]
-            in_channels: Number of channels in input image
-            embed_dim:  Tunable parameter
-                        Defaults to (patch_size)*(patch_size)
-        """
-        super().__init__()
-        self.patch_size = patch_size
-        self.num_patches = (image_size[0] // patch_size) * (image_size[1] // patch_size)
-        self.flatten_size = (patch_size) ** 2 * in_channels
-        self.projection = nn.Conv2d(
-            in_channels, embed_dim, kernel_size=patch_size, stride=patch_size
-        )
-
-    def forward(self, x):
-        """Embed Given Patch
-
-        Args:
-            input: Patch
-                   shape = (b: Batch Size, c: Channels, h_p: Height, w_p: Width)
-        """
-        x = self.projection(x)
-        x = x.flatten(2)
-        x = x.transpose(1, 2)
-        return x
 
 
-class TransformerEncoder(nn.Module):
-    def __init__(
-            self, 
-            embed_dim: int, 
-            num_heads: int, 
-            num_layers: int, 
-            dropout_rate
-    ) -> None:
-        """Encoder Layer
-
-        Args:
-            embed_dim: Shape of the input image
-            num_heads: Number of MultiHeadAttention models
-            num_layers: Number of channels in input image
-            dropout_rate: Regulate to [0.1 - 0.29999...]
-        """
-
-        super().__init__()
-
-        encoder_layer = nn.TransformerEncoderLayer(d_model=embed_dim, nhead=num_heads, dropout=dropout_rate)
-
-        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
-
-    def forward(self, input):
-        return self.encoder(input)
-
-
-class VisionTransformer(nn.Module):
-    def __init__(
-        self,
-        image_size: int,
-        patch_size: int,
-        in_channels: int,
-        embed_dim: int,
-        num_heads: int,
-        num_layers: int,
-        num_classes: int,
-        dropout_rate=0.15,
-    ) -> None:
-        """Vision Transformer Initialization
-
-        Args:
-            {pre-defined}
-        """
-        super().__init__()
-
-        self.patch_embedding = PatchEmbedding(image_size, patch_size, in_channels, embed_dim)
-
-        self.transformer_encoder = TransformerEncoder(embed_dim, num_heads, num_layers, dropout_rate)
-
-        self.classifier = nn.Linear(embed_dim, num_classes)
-
-    def forward(self, x):
-        """Propagates the input through the Transformer
-
-        Args:
-            x: Input
-
-        Returns:
-            Output of Transformer
-        """
-        x = self.patch_embedding(x)
-        x = self.transformer_encoder(x)
-        cls_token = x[:, 0]
-        x = self.classifier(cls_token)
-        return x
 
 
 class CNN(nn.Module):
@@ -462,3 +359,180 @@ class ResidualMLP(nn.Module):
     def forward(self, x):
         return self.layers(x)
     
+class MultiHeadedSelfAttention(nn.Module):
+    def __init__(
+            self,
+            input_dim: int,
+            attention_head_dim: int,
+            num_attention_heads: int,
+            dropout_rate: float
+    ) -> None:
+            
+        super(MultiHeadedSelfAttention,self).__init__()
+        
+        self.num_attention_heads = num_attention_heads
+        self.hidden_dim = attention_head_dim * num_attention_heads
+        self.scale = attention_head_dim ** -0.5         
+        
+        self.key_layer   = self.qkv_layer(input_dim,self.hidden_dim,num_attention_heads)
+        self.query_layer = self.qkv_layer(input_dim,self.hidden_dim,num_attention_heads)
+        self.value_layer = self.qkv_layer(input_dim,self.hidden_dim,num_attention_heads)
+        
+        self.attention_scores=nn.Softmax(dim=-1)
+        self.dropout = nn.Dropout(dropout_rate)
+
+        self.out_layer = nn.Sequential(
+            nn.Linear(num_attention_heads * self.hidden_dim, input_dim),
+            nn.Dropout(dropout_rate)
+        )
+    
+    def qkv_layer(self,input_dim, hidden_dim, num_heads):
+        layer = nn.Linear(input_dim, num_heads * hidden_dim, bias=False)
+        return layer
+    
+    def forward(self, x):
+        key = self.key_layer(x)
+        query = self.query_layer(x)
+        value = self.value_layer(x)
+        
+        batch_size = x.size(0)
+        query = query.view(batch_size, -1, self.num_attention_heads, self.hidden_dim).transpose(1, 2)
+        key = key.view(batch_size, -1, self.num_attention_heads, self.hidden_dim).transpose(1, 2)
+        value = value.view(batch_size, -1, self.num_attention_heads, self.hidden_dim).transpose(1, 2)
+
+        dot_product = torch.matmul(query, key.transpose(-1, -2))*self.scale  # (Q x K^T)/(Dk^-2)
+        scores=self.attention_scores(dot_product)
+        scores = self.dropout(scores)
+        weighted_scores = torch.matmul(scores, value)
+        weighted_scores = weighted_scores.transpose(1, 2).contiguous()
+        weighted_scores = weighted_scores.view(batch_size, -1, self.num_attention_heads * self.hidden_dim)
+        output = self.out_layer(weighted_scores)
+        return output
+
+class TransformerEncoder(nn.Module):
+    def __init__(
+            self,
+            num_attention_heads: int,
+            num_layers: int,
+            embed_dim: int,
+            attention_head_dim: int,
+            mlp_head_dim: int,
+            dropout_rate: float
+    ) -> None:
+
+        super(TransformerEncoder,self).__init__()
+        self.num_heads = num_attention_heads
+        self.num_layers = num_layers
+        self.embed_dim = embed_dim
+        self.attention_head_dim = attention_head_dim
+        self.mlp_head_dim = mlp_head_dim
+        self.dropout_rate = dropout_rate
+
+        self.self_attention_heads, self.feed_forward_networks=self.getlayers()
+
+    def getlayers(self):
+        self_attention_heads = nn.ModuleList()
+        feed_forward_networks = nn.ModuleList()
+
+        for _ in range(self.num_layers):
+            attention = nn.Sequential(
+                nn.LayerNorm(self.embed_dim),
+                MultiHeadedSelfAttention(
+                    self.embed_dim,
+                    self.attention_head_dim,
+                    self.num_heads,
+                    self.dropout_rate
+                )
+            )
+            self_attention_heads.append(attention)
+            
+            feed_forward_network = nn.Sequential(
+                nn.LayerNorm(self.embed_dim),
+                nn.Linear(self.embed_dim, self.mlp_head_dim),
+                nn.GELU(),
+                nn.Dropout(self.dropout_rate),
+                nn.Linear(self.mlp_head_dim, self.embed_dim),
+                nn.Dropout(self.dropout_rate)
+            )
+
+            feed_forward_networks.append(feed_forward_network)
+            
+            return self_attention_heads, feed_forward_networks
+
+    def forward(self, x):
+        
+        for(attention,feed_forward_network) in zip(self.self_attention_heads, self.feed_forward_networks):
+            x = x + attention(x)
+            x = x + feed_forward_network(x)
+        
+        return x
+
+class VisionTransformer(nn.Module):
+    def __init__(
+            self,
+            input_shape,
+            in_channels: int,
+            num_classes: int,
+            dropout_rate = 0.15,
+            patch_size = 16,
+            embed_dim = 512,
+            self_attention_heads = 12,
+            num_layers = 12,
+            attention_head_dim = 64,
+            mlp_head_dim = 3072
+    ) -> None:
+
+        super(VisionTransformer, self).__init__()
+
+        self.input_shape = input_shape
+        self.in_channels = in_channels
+        self.num_classes = num_classes
+        self.dropout_rate = dropout_rate
+        self.patch_size = patch_size
+        self.embed_dim = embed_dim
+        self.self_attention_heads = self_attention_heads
+        self.num_layers = num_layers
+        self.attention_head_dim = attention_head_dim
+        self.mlp_head_dim = mlp_head_dim
+
+        self.num_patches = (input_shape[0]//patch_size)*(input_shape[1]//patch_size)+1
+        
+        self.patch_embedding = nn.Linear(patch_size * patch_size * in_channels, embed_dim)
+
+        self.dropout_layer = nn.Dropout(dropout_rate)
+
+        self.cls_token = nn.Parameter(torch.randn(1, 1, self.embed_dim))
+
+        self.positional_embedding=nn.Parameter(torch.randn(1, self.num_patches, self.embed_dim))
+
+        self.transformer_encoder = TransformerEncoder(num_attention_heads=self_attention_heads, 
+                                num_layers=num_layers,
+                                embed_dim=512, 
+                                attention_head_dim=attention_head_dim,
+                                mlp_head_dim=mlp_head_dim,
+                                dropout_rate=dropout_rate)
+
+        self.prediction_mlp=nn.Sequential(nn.LayerNorm(self.embed_dim), nn.Linear(self.embed_dim, num_classes))
+
+
+
+    def forward(self, x):
+        num_patches = (x.size(2)//self.patch_size)*(x.size(3)//self.patch_size) + 1
+        
+        batch_size = x.size(0)
+        x = x.unfold(2, self.patch_size, self.patch_size).unfold(3, self.patch_size, self.patch_size)
+        x = x.permute(0, 2, 3, 1, 4, 5).contiguous()
+        x = x.view(batch_size, -1, self.patch_size * self.patch_size * self.in_channels)
+        embedding = self.patch_embedding(x)
+
+        x=torch.cat((self.cls_token.repeat(x.size(0),1,1), embedding), dim=1)
+        
+        if num_patches==self.num_patches:
+            x+=self.positional_embedding
+            print(x.shape, "at 2--faultline at interpolation")
+        
+        x = self.dropout_layer(x)
+        x = self.transformer_encoder(x)
+        x= x[:,0,:] 
+        prediction=self.prediction_mlp(x)
+        return prediction
