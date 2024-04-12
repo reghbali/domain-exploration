@@ -327,7 +327,7 @@ class ResidualMLP(nn.Module):
     def __init__(
             self, 
             input_shape, 
-            layers: tuple[int], 
+            layers: Tuple[int], 
             num_classes: int, 
             activation=nn.GELU()
     ) -> None:
@@ -367,7 +367,11 @@ class MultiHeadedSelfAttention(nn.Module):
             num_attention_heads: int,
             dropout_rate: float
     ) -> None:
-            
+        """Initialization of the Multi Headed Self Attention Layer
+
+        Args: Refer to VisionTransformer class for full evaluation of variables
+        
+        """     
         super(MultiHeadedSelfAttention,self).__init__()
         
         self.num_attention_heads = num_attention_heads
@@ -419,7 +423,12 @@ class TransformerEncoder(nn.Module):
             mlp_head_dim: int,
             dropout_rate: float
     ) -> None:
+        """Initialization of the Transformer Encoder
 
+ 
+        Args: Refer to VisionTransformer class for full evaluation of variables
+        
+        """
         super(TransformerEncoder,self).__init__()
         self.num_heads = num_attention_heads
         self.num_layers = num_layers
@@ -427,6 +436,8 @@ class TransformerEncoder(nn.Module):
         self.attention_head_dim = attention_head_dim
         self.mlp_head_dim = mlp_head_dim
         self.dropout_rate = dropout_rate
+
+        # attention_head_dim * num_attention_heads
 
         self.self_attention_heads, self.feed_forward_networks=self.getlayers()
 
@@ -470,17 +481,32 @@ class TransformerEncoder(nn.Module):
 class VisionTransformer(nn.Module):
     def __init__(
             self,
-            input_shape,
+            input_shape: Tuple[int],
             in_channels: int,
             num_classes: int,
-            dropout_rate = 0.15,
-            patch_size = 16,
-            embed_dim = 512,
-            self_attention_heads = 12,
-            num_layers = 12,
-            attention_head_dim = 64,
-            mlp_head_dim = 3072
+            dropout_rate: float,        
+            patch_size: int,
+            embed_dim: int,
+            num_attention_heads: int,
+            num_layers: int,
+            attention_head_dim: int,
+            mlp_head_dim: int
     ) -> None:
+        """Initialization of the Vision Transformer Architecture
+
+        Args:
+            input_shape: Shape of input images
+            in_channels:  Number of channels in image
+            num_classes: Classes in classification task
+            dropout_rate: Probability with which individual elements of the data are randomly dropped during training
+            patch_size: The size of each patch 
+            embed_dim: Dimension of embeddings in model                                                     
+            num_attention_heads: Number of separate attention mechanisms in each multi-head attention layer (12)
+            num_layers: Number of Transformer blocks in the model.                                          (12)
+            attention_head_dim: Dimension of the space where each head finds its attention mapping          (64)
+            mlp_head_dim: Dimension of the mlp networks that follow the attention operations                (3072)
+                
+        """
 
         super(VisionTransformer, self).__init__()
 
@@ -490,7 +516,7 @@ class VisionTransformer(nn.Module):
         self.dropout_rate = dropout_rate
         self.patch_size = patch_size
         self.embed_dim = embed_dim
-        self.self_attention_heads = self_attention_heads
+        self.num_attention_heads = num_attention_heads
         self.num_layers = num_layers
         self.attention_head_dim = attention_head_dim
         self.mlp_head_dim = mlp_head_dim
@@ -505,7 +531,8 @@ class VisionTransformer(nn.Module):
 
         self.positional_embedding=nn.Parameter(torch.randn(1, self.num_patches, self.embed_dim))
 
-        self.transformer_encoder = TransformerEncoder(num_attention_heads=self_attention_heads, 
+        self.transformer_encoder = TransformerEncoder(
+                                num_attention_heads=num_attention_heads, 
                                 num_layers=num_layers,
                                 embed_dim=512, 
                                 attention_head_dim=attention_head_dim,
@@ -529,7 +556,7 @@ class VisionTransformer(nn.Module):
         
         if num_patches==self.num_patches:
             x+=self.positional_embedding
-            print(x.shape, "at 2--faultline at interpolation")
+            print(x.shape, "at 2--faultline")
         
         x = self.dropout_layer(x)
         x = self.transformer_encoder(x)
