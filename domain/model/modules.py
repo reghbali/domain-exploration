@@ -490,7 +490,8 @@ class VisionTransformer(nn.Module):
             num_attention_heads: int,
             num_layers: int,
             attention_head_dim: int,
-            mlp_head_dim: int
+            mlp_head_dim: int,
+            freq: bool
     ) -> None:
         """Initialization of the Vision Transformer Architecture
 
@@ -505,7 +506,8 @@ class VisionTransformer(nn.Module):
             num_layers: Number of Transformer blocks in the model.                                          (12)
             attention_head_dim: Dimension of the space where each head finds its attention mapping          (64)
             mlp_head_dim: Dimension of the mlp networks that follow the attention operations                (3072)
-                
+            freq: Determine if transformer should patch for pixels or frequency representations 
+             
         """
 
         super(VisionTransformer, self).__init__()
@@ -520,10 +522,11 @@ class VisionTransformer(nn.Module):
         self.num_layers = num_layers
         self.attention_head_dim = attention_head_dim
         self.mlp_head_dim = mlp_head_dim
-
-        self.num_patches = (input_shape[0]//patch_size)*(input_shape[1]//patch_size)+1
+        self.freq = freq
         
-        self.patch_embedding = nn.Linear(patch_size * patch_size * in_channels, embed_dim)
+        self.patch_embedding = PatchEmbedding(input_shape, in_channels, patch_size, embed_dim, freq)
+
+        self.num_patches = self.patch_embedding.num_patches
 
         self.dropout_layer = nn.Dropout(dropout_rate)
 
@@ -544,22 +547,47 @@ class VisionTransformer(nn.Module):
 
 
     def forward(self, x):
-        num_patches = (x.size(2)//self.patch_size)*(x.size(3)//self.patch_size) + 1
-        
         batch_size = x.size(0)
-        x = x.unfold(2, self.patch_size, self.patch_size).unfold(3, self.patch_size, self.patch_size)
-        x = x.permute(0, 2, 3, 1, 4, 5).contiguous()
-        x = x.view(batch_size, -1, self.patch_size * self.patch_size * self.in_channels)
-        embedding = self.patch_embedding(x)
+        embedding, num_patches = self.patch_embedding(x)
 
-        x=torch.cat((self.cls_token.repeat(x.size(0),1,1), embedding), dim=1)
+        x = torch.cat((self.cls_token.repeat(batch_size, 1, 1), embedding), dim=1)
         
-        if num_patches==self.num_patches:
-            x+=self.positional_embedding
-            print(x.shape, "at 2--faultline")
-        
+        if num_patches == self.patch_embedding.num_patches:
+            x += self.positional_embedding
+                
         x = self.dropout_layer(x)
         x = self.transformer_encoder(x)
         x= x[:,0,:] 
         prediction=self.prediction_mlp(x)
         return prediction
+
+class PatchEmbedding(nn.Module):
+    def __init__(
+            self, 
+            img_size: Tuple[int],
+            in_channels: int, 
+            patch_size: int, 
+            embed_dim: int, 
+            freq: bool
+    ) -> None:
+        
+        super(PatchEmbedding, self).__init__()
+        self.patch_size = patch_size
+        self.embed_dim = embed_dim
+        self.in_channels = in_channels
+        self.img_size = img_size
+        self.freq = freq
+        self.num_patches = (img_size[0] // patch_size) * (img_size[1] // patch_size) + 1
+        self.projection = nn.Linear(patch_size * patch_size * in_channels, embed_dim)
+
+    def forward(self,x):
+        if self.freq == False:
+            batch_size = x.size(0)
+            x = x.unfold(2, self.patch_size, self.patch_size).unfold(3, self.patch_size, self.patch_size)
+            x = x.permute(0, 2, 3, 1, 4, 5).contiguous()
+            x = x.view(batch_size, -1, self.patch_size * self.patch_size * self.in_channels)
+            x = self.projection(x)
+            return x, self.num_patches
+        
+        else:
+            # patching for frequency space here
