@@ -4,6 +4,8 @@ import torch.nn as nn
 import torch
 import numpy as np
 import torch.nn.functional as F
+from einops import rearrange
+
 
 
 class MLP_Block(nn.Module):
@@ -583,11 +585,13 @@ class PatchEmbedding(nn.Module):
     def forward(self,x):
         if self.freq == False:
             batch_size = x.size(0)
-            x = x.unfold(2, self.patch_size, self.patch_size).unfold(3, self.patch_size, self.patch_size)
-            x = x.permute(0, 2, 3, 1, 4, 5).contiguous()
-            x = x.view(batch_size, -1, self.patch_size * self.patch_size * self.in_channels)
+            rearrange('b c (h p1) (w p2) -> b (h w) (p1 p2 c)', p1 = self.patch_size[0], p2 = self.patch_size[1])
             x = self.projection(x)
             return x, self.num_patches
         
         else:
-            # patching for frequency space here
+            x = self.frequency_transformation(x)             # placeholder
+            return x
+        
+    def frequency_transformation(self, x):
+        return x
