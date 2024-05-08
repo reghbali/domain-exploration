@@ -9,8 +9,12 @@ dependencies = [
     "torch",
     "torchmetrics",
     "torchvision",
-    "lightning[pytorch-extra]"
+    "lightning[pytorch-extra]",
+    "einops"
 ]
 
 [tool.setuptools]
 py-modules = ["domain"]
+
+[project.scripts]
+domain = "domain.main:cli_main"

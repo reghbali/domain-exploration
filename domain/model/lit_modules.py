@@ -65,13 +65,24 @@ class LitClassificationModel(L.LightningModule):
         self.log('train_loss', loss, prog_bar=True)
         return loss
 
-    def test_step(self, batch, batch_idx):
+    def _shared_eval_step(self, batch, batch_idx):
         # this is the test loop
         y_hat, y = self.infer_batch(batch)
         loss = self.criterion(y_hat, y)
         acc = multiclass_accuracy(y_hat, y, num_classes=self.num_classes)
+        return loss, acc
+
+    def validation_step(self, batch, batch_idx):
+        loss, acc = self._shared_eval_step(batch, batch_idx)
+        self.log('val_loss', loss, prog_bar=True)
+        self.log('acc', acc, prog_bar=True)
+        return {'val_acc': acc, 'val_loss': loss}
+
+    def test_step(self, batch, batch_idx):
+        loss, acc = self._shared_eval_step(batch, batch_idx)
         self.log('test_loss', loss, prog_bar=True)
         self.log('acc', acc, prog_bar=True)
+        return {'test_acc': acc, 'test_loss': loss}
 
 
 class MLP_MNIST(LitClassificationModel):
