@@ -41,9 +41,9 @@ class MLP(nn.Module):
     def __init__(
         self,
         input_shape: Tuple[int],
-        output_shape: Tuple[int],
+        num_classes: int,
         hidden_factor: int = 1,
-        depth: int = 1,
+        depth: int = 2,
     ) -> None:
         """Initialization of the multi-layer perceptron.
 
@@ -57,9 +57,8 @@ class MLP(nn.Module):
         """
         super().__init__()
         self.input_shape = input_shape
-        self.output_shape = output_shape
+        self.num_classes = num_classes
         input_len = int(np.prod(input_shape))
-        output_len = int(np.prod(output_shape))
         hidden_size = int(input_len * hidden_factor)
 
         self.layers = nn.ModuleList(
@@ -67,7 +66,7 @@ class MLP(nn.Module):
                 nn.Flatten(),
                 nn.Linear(input_len, hidden_size),  # Input layer
                 MLP_Block(hidden_size, nn.ReLU(), depth),
-                nn.Linear(hidden_size, output_len),  # Output layer
+                nn.Linear(hidden_size, num_classes),  # Output layer
             ]
         )
 

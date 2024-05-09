@@ -66,7 +66,6 @@ class LitClassificationModel(L.LightningModule):
         return loss
 
     def _shared_eval_step(self, batch, batch_idx):
-        # this is the test loop
         y_hat, y = self.infer_batch(batch)
         loss = self.criterion(y_hat, y)
         acc = multiclass_accuracy(y_hat, y, num_classes=self.num_classes)

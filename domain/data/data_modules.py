@@ -86,6 +86,8 @@ class ImageNetDataModule(BaseDataModule):
 class MNISTDataModule(BaseDataModule):
     def __init__(self, domain: str, batch_size: int = 32) -> None:
         super().__init__(domain=domain, batch_size=batch_size)
+        self.image_shape = (28, 28)
+        self.num_classes = 10
 
     def prepare_data(self):
         # download
@@ -121,6 +123,8 @@ class MNISTDataModule(BaseDataModule):
 class CIFAR10DataModule(BaseDataModule):
     def __init__(self, domain: str, batch_size: int = 32) -> None:
         super().__init__(domain=domain, batch_size=batch_size)
+        self.image_shape = (32, 32, 3)
+        self.num_classes = 10
 
     def prepare_data(self):
         # download
