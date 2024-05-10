@@ -5,9 +5,11 @@ from lightning.pytorch.loggers import TensorBoardLogger
 import domain.data.data_modules
 import domain.model.lit_modules
 
+from domain.cli import DomainCLI
+
 
 def cli_main():
-    cli = LightningCLI()
+    cli = DomainCLI()
     # note: don't call fit!!
 
 
