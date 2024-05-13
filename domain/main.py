@@ -9,7 +9,7 @@ from domain.cli import DomainCLI
 
 
 def cli_main():
-    cli = DomainCLI()
+    cli = LightningCLI()
     # note: don't call fit!!
 
 

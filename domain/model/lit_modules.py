@@ -30,7 +30,7 @@ class LitClassificationModel(L.LightningModule):
         Returns:
             Configured optimizer and scheduler.
         """
-        optimizer = torch.optim.Adam(self.parameters(), lr=0.001)
+        optimizer = torch.optim.SGD(self.parameters(), lr=0.001)
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=300)
         return [optimizer], [scheduler]
 
@@ -86,9 +86,9 @@ class LitClassificationModel(L.LightningModule):
 
 class MLP_MNIST(LitClassificationModel):
     def __init__(self):
-        super().__init__(net=MLP([28, 28], [10]), num_classes=10)
+        super().__init__(net=MLP([28, 28], 10), num_classes=10)
 
 
 class MLP_CIFAR10(LitClassificationModel):
     def __init__(self):
-        super().__init__(net=MLP([32, 32, 3], [10]), num_classes=10)
+        super().__init__(net=MLP([32, 32, 3], 10), num_classes=10)
