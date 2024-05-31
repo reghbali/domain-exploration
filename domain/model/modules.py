@@ -87,7 +87,7 @@ class MLP(nn.Module):
 class CNN(nn.Module):
     def __init__(
         self,
-        input_shape: tuple[int, int],
+        input_shape: Tuple[int, int],
         num_classes: int,
         in_channels: int,
         conv1_feature_maps: int,
@@ -97,7 +97,7 @@ class CNN(nn.Module):
         linear_size1: int,
         linear_size2: int,
         linear_size3: int,
-        activation=nn.functional.gelu,
+        activation=nn.GELU
     ) -> None:
         """Initialization of the Convolutional Neural Network.
 
@@ -115,7 +115,6 @@ class CNN(nn.Module):
             activation: default geLu, other (nn.Module) activations accepted
         """
         super().__init__()
-        self.image_size
         output_shape = (input_shape[0] - kernel_size + 1) // pool_size
         output_shape = (output_shape - kernel_size + 1) // pool_size
         output_shape = output_shape**2 * conv2_feature_maps
@@ -571,7 +570,7 @@ class VisionTransformer(nn.Module):
         self.freq = freq
 
         self.patch_embedding = PatchEmbedding(
-            input_shape, in_channels, patch_size, embed_dim, freq
+            img_size=input_shape, in_channels=in_channels, patch_size=patch_size, embed_dim=embed_dim, freq=freq
         )
 
         self.num_patches = self.patch_embedding.num_patches
@@ -587,7 +586,7 @@ class VisionTransformer(nn.Module):
         self.transformer_encoder = TransformerEncoder(
             num_attention_heads=num_attention_heads,
             num_layers=num_layers,
-            embed_dim=512,
+            embed_dim=embed_dim,
             attention_head_dim=attention_head_dim,
             mlp_head_dim=mlp_head_dim,
             dropout_rate=dropout_rate,
@@ -633,14 +632,14 @@ class PatchEmbedding(nn.Module):
 
     def forward(self, x):
         if not self.freq:
-            rearrange(
+            x = rearrange(
+                x,
                 'b c (h p1) (w p2) -> b (h w) (p1 p2 c)',
-                p1=self.patch_size[0],
-                p2=self.patch_size[1],
+                p1=self.patch_size,
+                p2=self.patch_size,
             )
             x = self.projection(x)
             return x, self.num_patches
-
         else:
             x = self.frequency_transformation(x)  # placeholder
             return x
