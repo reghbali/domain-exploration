@@ -20,7 +20,7 @@ from domain.data.data_modules import MNISTDataModule, CIFAR10DataModule, ImageNe
 from domain.model.lit_modules import LitClassificationModel as LiT
 
 PERCENT_VALID_EXAMPLES = 0.1
-BATCHSIZE = 128
+BATCHSIZE = 64
 EPOCHS = 10
 DIR = root_dir
 
@@ -48,6 +48,7 @@ def get_args():
     parser.add_argument('--architecture', type=str, required=True, help='Model architecture (mlp, skipmlp, cnn, rescnn, vit)')
     parser.add_argument('--domain', type=str, required=True, help='Domain (frequency or pixel)')
     parser.add_argument('--dataset', type=str, required=True, help='Dataset (MNIST, CIFAR10, ImageNet)')
+    parser.add_argument('--batchsize', type=str, required=True, help='advised 64-512')
     
     if 'ipykernel_launcher' in sys.argv[0]:
         args, unknown = parser.parse_known_args()
@@ -132,13 +133,13 @@ def build_model(trial: optuna.trial.Trial, architecture: str, domain: str, datas
                                   
     return model
 
-def build_datamodule(dataset: str, domain: str) -> pl.LightningDataModule:
+def build_datamodule(dataset: str, domain: str, batch_size: int) -> pl.LightningDataModule:
     if dataset == 'MNIST':
-        datamodule = MNISTDataModule(domain=domain, batch_size=BATCHSIZE)
+        datamodule = MNISTDataModule(domain=domain, batch_size=batch_size)
     elif dataset == 'CIFAR10':
-        datamodule = CIFAR10DataModule(domain=domain, batch_size=BATCHSIZE)
+        datamodule = CIFAR10DataModule(domain=domain, batch_size=batch_size)
     elif dataset == 'ImageNet':
-        datamodule = ImageNetDataModule(domain=domain, batch_size=BATCHSIZE)
+        datamodule = ImageNetDataModule(domain=domain, batch_size=batch_size)
     return datamodule
 
 if __name__ == "__main__":
@@ -147,7 +148,7 @@ if __name__ == "__main__":
     pruner = optuna.pruners.MedianPruner() if args.pruning else optuna.pruners.NopPruner()
 
     study = optuna.create_study(direction="maximize", pruner=pruner)
-    study.optimize(lambda trial: objective(trial, build_model(trial, args.architecture, args.domain,args.dataset), build_datamodule(args.dataset, args.domain)), n_trials=2, timeout=3600)
+    study.optimize(lambda trial: objective(trial, build_model(trial, args.architecture, args.domain,args.dataset), build_datamodule(args.dataset, args.domain, args.batchsize)), n_trials=2, timeout=3600)
 
     print("Number of finished trials: {}".format(len(study.trials)))
 
