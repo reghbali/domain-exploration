@@ -5,7 +5,7 @@ import torch
 from torch.optim import lr_scheduler, Optimizer
 from torchmetrics.functional.classification import multiclass_accuracy
 
-from domain.model.modules import MLP
+from domain.model.modules import MLP, ResidualMLP, ResCNN, ResCNN_block, VisionTransformer 
 
 
 class LitClassificationModel(L.LightningModule):
@@ -92,3 +92,208 @@ class MLP_MNIST(LitClassificationModel):
 class MLP_CIFAR10(LitClassificationModel):
     def __init__(self):
         super().__init__(net=MLP([32, 32, 3], 10), num_classes=10)
+
+
+class MLP_ImageNet(LitClassificationModel):
+    def __init__(self):
+        super().__init__(net=MLP([224, 224, 3], 1000), num_classes=1000)
+
+
+class ResidualMLP_MNIST(LitClassificationModel):
+    def __init__(self):
+        super().__init__(
+            net=ResidualMLP(
+                input_shape=(1, 28, 28),
+                num_classes=10,
+                layers=[128, 128]
+            ),
+            num_classes=10
+        )
+
+
+class ResidualMLP_CIFAR10(LitClassificationModel):
+    def __init__(self):
+        super().__init__(
+            net=ResidualMLP(
+                input_shape=(3, 32, 32),
+                num_classes=10,
+                layers=[256, 256],
+                hidden_factor=4
+            ),
+            num_classes=10
+        )
+
+
+class ResidualMLP_ImageNet(LitClassificationModel):
+    def __init__(self):
+        super().__init__(
+            net=ResidualMLP(
+                input_shape=(3, 224, 224),
+                num_classes=1000,
+                layers=[512, 512],
+                hidden_factor=4
+            ),
+            num_classes=1000
+        )
+
+
+class CNN_MNIST(LitClassificationModel):
+    def __init__(self):
+        super().__init__(
+            net=CNN(
+                input_shape=(28, 28),
+                num_classes=10,
+                in_channels=1,
+                conv1_feature_maps=32,
+                conv2_feature_maps=64,
+                kernel_size=3,
+                pool_size=2,
+                linear_size1=128,
+                linear_size2=64,
+                linear_size3=32,
+                activation=nn.ReLU,
+            ),
+            num_classes=10,
+        )
+
+
+class CNN_CIFAR10(LitClassificationModel):
+    def __init__(self):
+        super().__init__(
+            net=CNN(
+                input_shape=(32, 32),
+                num_classes=10,
+                in_channels=3,
+                conv1_feature_maps=32,
+                conv2_feature_maps=64,
+                kernel_size=3,
+                pool_size=2,
+                linear_size1=128,
+                linear_size2=64,
+                linear_size3=32,
+                activation=nn.ReLU,
+            ),
+            num_classes=10,
+        )
+
+
+class CNN_ImageNet(LitClassificationModel):
+    def __init__(self):
+        super().__init__(
+            net=CNN(
+                input_shape=(224, 224),
+                num_classes=1000,
+                in_channels=3,
+                conv1_feature_maps=64,
+                conv2_feature_maps=128,
+                kernel_size=3,
+                pool_size=2,
+                linear_size1=512,
+                linear_size2=256,
+                linear_size3=128,
+                activation=nn.ReLU,
+            ),
+            num_classes=1000,
+        )
+
+
+class ResCNN_MNIST(LitClassificationModel):
+    def __init__(self):
+        super().__init__(
+            net=ResCNN(
+                ResCNN_block=ResCNN_block,
+                layers=(2, 2, 2, 2),
+                in_channels=1,
+                num_classes=10,
+                activation=nn.ReLU(),
+            ),
+            num_classes=10
+        )
+
+
+class ResCNN_CIFAR10(LitClassificationModel):
+    def __init__(self):
+        super().__init__(
+            net=ResCNN(
+                ResCNN_block=ResCNN_block,
+                layers=(3, 4, 6, 3),
+                in_channels=3,
+                num_classes=10,
+                activation=nn.ReLU(),
+            ),
+            num_classes=10
+        )
+
+
+class ResCNN_ImageNet(LitClassificationModel):
+    def __init__(self):
+        super().__init__(
+            net=ResCNN(
+                ResCNN_block=ResCNN_block,
+                layers=(3, 4, 6, 3),  # resnet50 config
+                in_channels=3,
+                num_classes=1000,
+                activation=nn.ReLU(),
+            ),
+            num_classes=1000
+        )
+
+
+class VisionTransformer_CIFAR10(LitClassificationModel):
+    def __init__(self):
+        super().__init__(
+            net=VisionTransformer(
+                input_shape=(3, 32, 32),
+                in_channels=3, 
+                num_classes=10, 
+                dropout_rate=0.1, 
+                patch_size=8, 
+                embed_dim=256, 
+                num_attention_heads=8, 
+                num_layers=8, 
+                attention_head_dim=32, 
+                mlp_head_dim=1024, 
+                freq=False
+            ),
+            num_classes=10
+        )
+
+
+class VisionTransformer_MNIST(LitClassificationModel):
+    def __init__(self):
+        super().__init__(
+            net=VisionTransformer(
+                input_shape=(1, 28, 28),
+                in_channels=1,
+                num_classes=10,
+                dropout_rate=0.1,
+                patch_size=7,
+                embed_dim=256,
+                num_attention_heads=8,
+                num_layers=8,
+                attention_head_dim=32,
+                mlp_head_dim=1024,
+                freq=False
+            ),
+            num_classes=10
+        )
+
+
+class VisionTransformer_ImageNet(LitClassificationModel):
+    def __init__(self):
+        super().__init__(
+            net=VisionTransformer(
+                input_shape=(3, 224, 224),
+                in_channels=3,
+                num_classes=1000,
+                dropout_rate=0.1,
+                patch_size=16,  # standard ViT imagenet patch_size
+                embed_dim=768,
+                num_attention_heads=12,
+                num_layers=12,
+                attention_head_dim=64,
+                mlp_head_dim=3072,
+                freq=False
+            ),
+            num_classes=1000
+        )

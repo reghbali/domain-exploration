@@ -87,7 +87,7 @@ class MLP(nn.Module):
 class CNN(nn.Module):
     def __init__(
         self,
-        input_shape: tuple[int, int],
+        input_shape: Tuple[int, int],
         num_classes: int,
         in_channels: int,
         conv1_feature_maps: int,
