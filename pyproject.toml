@@ -6,6 +6,8 @@ build-backend = "setuptools.build_meta"
 name = "domain"
 version = "0.0.1"
 dependencies = [
+    "optuna",
+    "optuna-integration",
     "torch",
     "torchmetrics",
     "torchvision",
