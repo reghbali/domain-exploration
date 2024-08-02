@@ -48,6 +48,7 @@ class ImageNetDataModule(BaseDataModule):
         self.data_dir = data_dir
         self.input_domain = input_domain
         self.batch_size = batch_size
+        self.num_classes = 1000
 
     def setup(self):
         normalize = transforms.Normalize(
