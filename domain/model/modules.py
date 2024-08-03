@@ -115,7 +115,6 @@ class CNN(nn.Module):
             activation: default geLu, other (nn.Module) activations accepted
         """
         super().__init__()
-        self.image_size
         output_shape = (input_shape[0] - kernel_size + 1) // pool_size
         output_shape = (output_shape - kernel_size + 1) // pool_size
         output_shape = output_shape**2 * conv2_feature_maps
@@ -587,7 +586,7 @@ class VisionTransformer(nn.Module):
         self.transformer_encoder = TransformerEncoder(
             num_attention_heads=num_attention_heads,
             num_layers=num_layers,
-            embed_dim=512,
+            embed_dim=embed_dim, # review
             attention_head_dim=attention_head_dim,
             mlp_head_dim=mlp_head_dim,
             dropout_rate=dropout_rate,
@@ -633,10 +632,11 @@ class PatchEmbedding(nn.Module):
 
     def forward(self, x):
         if not self.freq:
-            rearrange(
+            x = rearrange(
+                x,
                 'b c (h p1) (w p2) -> b (h w) (p1 p2 c)',
-                p1=self.patch_size[0],
-                p2=self.patch_size[1],
+                p1=self.patch_size,
+                p2=self.patch_size,
             )
             x = self.projection(x)
             return x, self.num_patches
