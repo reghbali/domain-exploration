@@ -5,7 +5,7 @@ import torch
 from torch.optim import lr_scheduler, Optimizer
 from torchmetrics.functional.classification import multiclass_accuracy
 
-from domain.model.modules import MLP, ResidualMLP, ResCNN, ResCNN_block, VisionTransformer 
+from domain.model.modules import MLP, ResidualMLP, ResCNN, ResCNN_block, VisionTransformer, CNN
 
 
 class LitClassificationModel(L.LightningModule):
@@ -74,7 +74,7 @@ class LitClassificationModel(L.LightningModule):
     def validation_step(self, batch, batch_idx):
         loss, acc = self._shared_eval_step(batch, batch_idx)
         self.log('val_loss', loss, prog_bar=True)
-        self.log('acc', acc, prog_bar=True)
+        self.log('val_acc', acc, prog_bar=True)
         return {'val_acc': acc, 'val_loss': loss}
 
     def test_step(self, batch, batch_idx):
