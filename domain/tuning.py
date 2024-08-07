@@ -72,7 +72,7 @@ def build_model(
     trial: optuna.trial.Trial, architecture: str, domain: str, dataset: str
 ) -> nn.Module:
     if architecture == 'mlp':
-        hidden_factor = trial.suggest_int('hidden_factor', 128, 1024)
+        hidden_factor = trial.suggest_int('hidden_factor', 1, 16)
         depth = trial.suggest_int('depth', 1, 5)
         model = MLP(
             input_shape=(28, 28),
