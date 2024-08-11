@@ -21,21 +21,18 @@ from domain.data.data_modules import (
 )
 from domain.model.lit_modules import LitClassificationModel as LiT
 
-PERCENT_VALID_EXAMPLES = 0.1
-BATCHSIZE = 64
-EPOCHS = 10
-
+valid_examples = 0.1
 
 def objective(
-    trial: optuna.trial.Trial, model: nn.Module, datamodule: pl.LightningDataModule
+    trial: optuna.trial.Trial, model: nn.Module, datamodule: pl.LightningDataModule, epochs: int
 ) -> float:
     model = LiT(model, datamodule.num_classes)
 
     trainer = pl.Trainer(
         logger=True,
-        limit_val_batches=PERCENT_VALID_EXAMPLES,
+        limit_val_batches=valid_examples,
         enable_checkpointing=False,
-        max_epochs=EPOCHS,
+        max_epochs=epochs,
         accelerator='auto',
         devices=1,
         callbacks=[PyTorchLightningPruningCallback(trial, monitor='val_acc')],
@@ -61,7 +58,8 @@ def get_args():
     parser.add_argument(
         '--dataset', type=str, required=True, help='Dataset (MNIST, CIFAR10, ImageNet)'
     )
-    parser.add_argument('--batchsize', type=int, required=True, help='advised 64-512')
+    parser.add_argument('--batchsize', type=int, required=True, help='Batch size')
+    parser.add_argument('--epochs', type=int, required=True, help='Number of epochs')
 
     if 'ipykernel_launcher' in sys.argv[0]:
         args, unknown = parser.parse_known_args()
@@ -74,7 +72,7 @@ def build_model(
     trial: optuna.trial.Trial, architecture: str, domain: str, dataset: str
 ) -> nn.Module:
     if architecture == 'mlp':
-        hidden_factor = trial.suggest_int('hidden_factor', 128, 1024)
+        hidden_factor = trial.suggest_int('hidden_factor', 1, 16)
         depth = trial.suggest_int('depth', 1, 5)
         model = MLP(
             input_shape=(28, 28),
@@ -187,9 +185,7 @@ def build_datamodule(
 if __name__ == '__main__':
     args = get_args()
 
-    pruner = (
-        optuna.pruners.MedianPruner() if args.pruning else optuna.pruners.NopPruner()
-    )
+    pruner = (optuna.pruners.MedianPruner() if args.pruning else optuna.pruners.NopPruner())
 
     study = optuna.create_study(direction='maximize', pruner=pruner)
     study.optimize(
@@ -197,6 +193,7 @@ if __name__ == '__main__':
             trial,
             build_model(trial, args.architecture, args.domain, args.dataset),
             build_datamodule(args.dataset, args.domain, args.batchsize),
+            args.epochs,
         ),
         n_trials=2,
         timeout=3600,

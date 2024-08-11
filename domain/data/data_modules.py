@@ -1,5 +1,4 @@
 import os
-
 import lightning as L
 import torch
 from torchvision import datasets
@@ -8,15 +7,15 @@ from torchvision.datasets import ImageFolder
 
 from domain.data.transforms import SimpleFreqSpace, SimpleComplex2Vec
 
-
 seed = torch.Generator().manual_seed(42)
 
-
 class BaseDataModule(L.LightningDataModule):
-    def __init__(self, domain: str, batch_size: int):
+    def __init__(self, domain: str, batch_size: int, num_workers: int = 4, pin_memory: bool = True):
         super().__init__()
         self.domain = domain
         self.batch_size = batch_size
+        self.num_workers = num_workers
+        self.pin_memory = pin_memory
 
         if self.domain == 'freq':
             self.domain_transform = transforms.Compose(
@@ -31,7 +30,14 @@ class BaseDataModule(L.LightningDataModule):
         Returns:
             Dataloader for training phase.
         """
-        return torch.utils.data.DataLoader(self.train_set, self.batch_size)
+        return torch.utils.data.DataLoader(
+            self.train_set,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            pin_memory=self.pin_memory,
+            shuffle=True,
+            persistent_workers=True,  # Add this line
+        )
 
     def val_dataloader(self) -> torch.utils.data.DataLoader:
         """Creates Dataloader for validation phase.
@@ -39,18 +45,24 @@ class BaseDataModule(L.LightningDataModule):
         Returns:
             Dataloader for validation phase.
         """
-        return torch.utils.data.DataLoader(self.val_set, self.batch_size)
-
+        return torch.utils.data.DataLoader(
+            self.val_set,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            pin_memory=self.pin_memory,
+            shuffle=False,
+            persistent_workers=True,  # Add this line
+        )
 
 class ImageNetDataModule(BaseDataModule):
-    def __init__(self, data_dir: str, input_domain: str, batch_size: int = 32) -> None:
-        super().__init__()
+    def __init__(self, data_dir: str, input_domain: str, batch_size: int = 32):
+        super().__init__(input_domain, batch_size)
         self.data_dir = data_dir
         self.input_domain = input_domain
         self.batch_size = batch_size
         self.num_classes = 1000
 
-    def setup(self):
+    def setup(self, stage=None):
         normalize = transforms.Normalize(
             mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
         )
@@ -65,7 +77,7 @@ class ImageNetDataModule(BaseDataModule):
                     transforms.RandomHorizontalFlip(),
                     transforms.ToTensor(),
                     normalize,
-                    self.domain_transfrom,
+                    self.domain_transform,
                 ]
             ),
         )
@@ -78,14 +90,13 @@ class ImageNetDataModule(BaseDataModule):
                     transforms.CenterCrop(224),
                     transforms.ToTensor(),
                     normalize,
-                    self.domain_transfrom,
+                    self.domain_transform,
                 ]
             ),
         )
 
-
 class MNISTDataModule(BaseDataModule):
-    def __init__(self, domain: str, batch_size: int = 32) -> None:
+    def __init__(self, domain: str, batch_size: int = 32):
         super().__init__(domain=domain, batch_size=batch_size)
         self.image_shape = (28, 28)
         self.num_classes = 10
@@ -95,7 +106,7 @@ class MNISTDataModule(BaseDataModule):
         datasets.MNIST(root='MNIST', download=True, train=True)
         datasets.MNIST(root='MNIST', download=True, train=False)
 
-    def setup(self, stage: str):
+    def setup(self, stage=None):
         tensor_transform = transforms.ToTensor()
 
         self.test_set = datasets.MNIST(
@@ -120,9 +131,8 @@ class MNISTDataModule(BaseDataModule):
             data_set, [train_set_size, valid_set_size], generator=seed
         )
 
-
 class CIFAR10DataModule(BaseDataModule):
-    def __init__(self, domain: str, batch_size: int = 4) -> None:
+    def __init__(self, domain: str, batch_size: int = 4):
         super().__init__(domain=domain, batch_size=batch_size)
         self.image_shape = (32, 32, 3)
         self.num_classes = 10
@@ -132,7 +142,7 @@ class CIFAR10DataModule(BaseDataModule):
         datasets.CIFAR10(root='CIFAR10', download=True, train=True)
         datasets.CIFAR10(root='CIFAR10', download=True, train=False)
 
-    def setup(self, stage: str):
+    def setup(self, stage=None):
         cifar10_transform = transforms.Compose(
             [
                 transforms.ToTensor(),
