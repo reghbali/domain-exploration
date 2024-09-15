@@ -19,7 +19,7 @@ class MLP_Block(nn.Module):
         """
         super(MLP_Block, self).__init__()
         layers = []
-        for _ in range(depth):
+        for _ in range(depth-1):
             linear = nn.Linear(hidden_size, hidden_size)
             layers.append(linear)
             layers.append(activation)
