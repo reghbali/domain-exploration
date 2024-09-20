@@ -43,7 +43,7 @@ class MLP(nn.Module):
         input_shape: Tuple[int],
         num_classes: int,
         hidden_factor: int = 1,
-        depth: int = 2,
+        depth: int = 1,
     ) -> None:
         """Initialization of the multi-layer perceptron.
 
