@@ -83,8 +83,8 @@ def build_model(
     trial: optuna.trial.Trial, architecture: str, domain: str, dataset_info: DatasetInfo
 ) -> nn.Module:
     if architecture == 'mlp':
-        hidden_factor = trial.suggest_int('hidden_factor', 1, 16)
-        depth = trial.suggest_int('depth', 1, 5)
+        hidden_factor = trial.suggest_int('hidden_factor', 1, 3)
+        depth = trial.suggest_int('depth', 1, 3)
         model = MLP(
             input_shape=dataset_info.image_shape,
             num_classes=dataset_info.num_classes,
@@ -94,21 +94,22 @@ def build_model(
 
     elif architecture == 'skipmlp':
         layers = tuple(
-            trial.suggest_int(f'layer_{i}', 32, 128)
-            for i in range(trial.suggest_int('depth', 1, 5))
+            2 ** trial.suggest_int(f'layer_{i}', 6, 8)
+            for i in range(trial.suggest_int('depth', 1, 4))
         )
         model = ResidualMLP(
             input_shape=dataset_info.image_shape, layers=layers, num_classes=10
         )
 
     elif architecture == 'cnn':
-        conv1_feature_maps = trial.suggest_int('conv1_feature_maps', 16, 64)
-        conv2_feature_maps = trial.suggest_int('conv2_feature_maps', 32, 128)
-        kernel_size = trial.suggest_int('kernel_size', 3, 7)
-        pool_size = trial.suggest_int('pool_size', 2, 3)
-        linear_size1 = trial.suggest_int('linear_size1', 128, 512)
-        linear_size2 = trial.suggest_int('linear_size2', 64, 256)
-        linear_size3 = trial.suggest_int('linear_size3', 32, 128)
+        root = trial.suggest_int('root', 16, 64)
+        conv1_feature_maps = root
+        conv2_feature_maps = root * 2
+        kernel_size = max(3, root // 16)
+        pool_size = 2 if root < 48 else 3
+        linear_size1 = root * 8
+        linear_size2 = root * 4
+        linear_size3 = root * 2
         model = CNN(
             input_shape=dataset_info.image_shape[:-1],
             num_classes=dataset_info.num_classes,
