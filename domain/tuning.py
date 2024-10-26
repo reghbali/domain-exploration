@@ -36,11 +36,13 @@ def objective(
     model: nn.Module,
     datamodule: pl.LightningDataModule,
     epochs: int,
+    name,
 ) -> float:
     model = LiT(model, datamodule.num_classes)
 
     trainer = pl.Trainer(
         logger=True,
+        default_root_dir=name,
         limit_val_batches=valid_examples,
         enable_checkpointing=False,
         max_epochs=epochs,
@@ -126,10 +128,10 @@ def build_model(
 
     elif architecture == 'rescnn':
         layers = (
-            trial.suggest_int('layer1', 2, 5),
-            trial.suggest_int('layer2', 2, 5),
-            trial.suggest_int('layer3', 2, 5),
-            trial.suggest_int('layer4', 2, 5),
+            trial.suggest_int('layer1', 2,5),
+            trial.suggest_int('layer2', 2,5),
+            trial.suggest_int('layer3', 3,6),
+            trial.suggest_int('layer4', 2,4),
         )
         model = ResCNN(ResCNN_block, layers=layers, in_channels=1, num_classes=10)
 
@@ -203,8 +205,9 @@ if __name__ == '__main__':
             ),
             build_datamodule(args.dataset, args.domain, args.batchsize),
             args.epochs,
+            name = f'lightning_logs/{args.architecture}_{args.domain}'
         ),
-        n_trials=2,
+        n_trials=3,
         timeout=3600,
     )
 
