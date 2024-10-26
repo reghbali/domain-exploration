@@ -241,9 +241,7 @@ class ResCNN(nn.Module):
 
         super(ResCNN, self).__init__()
         self.in_channels = 64
-        self.conv_0 = nn.Conv2d(
-            in_channels, 64, kernel_size=7, stride=2, padding=3, bias=False
-        )
+        self.conv_0 = nn.Conv2d(in_channels, 64, kernel_size=3, stride=1, padding=3, bias=False)
         self.norm_0 = nn.BatchNorm2d(64)
         self.activation = activation
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
@@ -252,7 +250,7 @@ class ResCNN(nn.Module):
             ResCNN_block, layers[0], intermediate_channels=64, stride=1
         )
         self.layer2 = self.initialize_layer(
-            ResCNN_block, layers[1], intermediate_channels=128, stride=2
+            ResCNN_block, layers[1], intermediate_channels=128, stride=1
         )
         self.layer3 = self.initialize_layer(
             ResCNN_block, layers[2], intermediate_channels=256, stride=2
@@ -263,7 +261,7 @@ class ResCNN(nn.Module):
 
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
 
-        self.dense = nn.Linear(512 * 4, num_classes)
+        self.dense = nn.Linear(2048, num_classes)
 
     def forward(self, x):
         x = self.conv_0(x)
