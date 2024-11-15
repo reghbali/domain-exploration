@@ -128,12 +128,17 @@ def build_model(
 
     elif architecture == 'rescnn':
         layers = (
-            trial.suggest_int('layer1', 2,5),
-            trial.suggest_int('layer2', 2,5),
-            trial.suggest_int('layer3', 3,6),
-            trial.suggest_int('layer4', 2,4),
+            trial.suggest_int('layer1', 2, 5),
+            trial.suggest_int('layer2', 2, 5),
+            trial.suggest_int('layer3', 3, 6),
+            trial.suggest_int('layer4', 2, 4),
         )
-        model = ResCNN(ResCNN_block, layers=layers, in_channels=1, num_classes=10)
+        model = ResCNN(
+            ResCNN_block,
+            layers=layers,
+            in_channels=dataset_info.image_shape[-1],
+            num_classes=10,
+        )
 
     elif architecture == 'vit':
         if dataset_info.name == 'CIFAR10':
@@ -205,7 +210,7 @@ if __name__ == '__main__':
             ),
             build_datamodule(args.dataset, args.domain, args.batchsize),
             args.epochs,
-            name = f'lightning_logs/{args.architecture}_{args.domain}'
+            name=f'lightning_logs/{args.architecture}_{args.domain}',
         ),
         n_trials=3,
         timeout=3600,
